@@ -26,6 +26,13 @@ struct Opt {
     input: Option<PathBuf>,
 }
 
+#[cfg(not(all(feature = "serde", feature = "serde_json")))]
+compile_error!("You must enable the features `serde` and `serde_json` to use the binary");
+
+#[cfg(not(all(feature = "serde", feature = "serde_json")))]
+fn main() {}
+
+#[cfg(all(feature = "serde", feature = "serde_json"))]
 fn main() -> Result<()> {
     let opt = Opt::from_args();
 

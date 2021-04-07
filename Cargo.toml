@@ -10,13 +10,15 @@ keywords = ["html", "parser", "json", "pest", "dom"]
 categories = ["parsing", "web-programming"]
 readme = "README.md"
 
+[features]
+default = ["serde", "sede_json"]
+
 [dependencies]
 pest = "2.1"
 pest_derive = "2.1"
 thiserror = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_derive = "1.0"
-serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
 structopt = "0.3.14"
 
 [dev-dependencies]

@@ -504,7 +504,6 @@ dependencies = [
  "pest_derive",
  "reqwest",
  "serde",
- "serde_derive",
  "serde_json",
  "structopt",
  "tempfile",

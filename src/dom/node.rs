@@ -1,8 +1,8 @@
 use super::element::Element;
-use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(untagged)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum Node<'input> {
     Text(&'input str),
     Element(Element<'input>),
