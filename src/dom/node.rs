@@ -3,15 +3,15 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(untagged)]
-pub enum Node {
-    Text(String),
-    Element(Element),
-    Comment(String),
+pub enum Node<'input> {
+    Text(&'input str),
+    Element(Element<'input>),
+    Comment(&'input str),
 }
 
-impl<'a> IntoIterator for &'a Node {
-    type Item = &'a Node;
-    type IntoIter = NodeIntoIterator<'a>;
+impl<'a, 'input> IntoIterator for &'a Node<'input> {
+    type Item = &'a Node<'input>;
+    type IntoIter = NodeIntoIterator<'a, 'input>;
 
     fn into_iter(self) -> Self::IntoIter {
         NodeIntoIterator {
@@ -21,14 +21,14 @@ impl<'a> IntoIterator for &'a Node {
     }
 }
 
-pub struct NodeIntoIterator<'a> {
-    node: &'a Node,
+pub struct NodeIntoIterator<'a, 'input> {
+    node: &'a Node<'input>,
     // We add/remove to this vec each time we go up/down a node three
-    index: Vec<(usize, &'a Node)>,
+    index: Vec<(usize, &'a Node<'input>)>,
 }
 
-impl<'a> Iterator for NodeIntoIterator<'a> {
-    type Item = &'a Node;
+impl<'a, 'input> Iterator for NodeIntoIterator<'a, 'input> {
+    type Item = &'a Node<'input>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Get first child
@@ -42,6 +42,7 @@ impl<'a> Iterator for NodeIntoIterator<'a> {
             Some(child) => {
                 self.index.push((0, self.node));
                 self.node = child;
+
                 Some(child)
             }
             // If element doesn't have a child, but is a child of another node
@@ -53,11 +54,13 @@ impl<'a> Iterator for NodeIntoIterator<'a> {
                     // Try to get the next sibling of the parent node
                     if let Some((sibling_index, parent)) = self.index.pop() {
                         let next_sibling = sibling_index + 1;
+
                         let sibling = if let Node::Element(ref e) = parent {
                             e.children.get(next_sibling)
                         } else {
                             None
                         };
+
                         if sibling.is_some() {
                             has_finished = true;
                             self.index.push((next_sibling, parent));
