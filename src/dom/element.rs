@@ -1,6 +1,6 @@
 use super::node::Node;
-use std::collections::HashMap;
 use pest::Span;
+use std::collections::HashMap;
 
 /// Normal: `<div></div>` or Void: `<meta/>`and `<meta>`
 #[derive(Debug, Clone, PartialEq)]
