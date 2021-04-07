@@ -1,7 +1,0 @@
----
-source: tests/comments.rs
-expression: dom
----
-{
-  "treeType": "empty"
-}

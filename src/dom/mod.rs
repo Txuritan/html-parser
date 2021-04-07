@@ -14,8 +14,6 @@ use node::Node;
 
 /// Document, DocumentFragment or Empty
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub enum DomVariant {
     /// This means that the parsed html had the representation of an html document. The doctype is optional but a document should only have one root node with the name of html.
     /// Example:
@@ -41,18 +39,14 @@ pub enum DomVariant {
 
 /// **The main struct** & the result of the parsed html
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
 pub struct Dom<'input> {
     /// The type of the tree that was parsed
     pub tree_type: DomVariant,
 
     /// All of the root children in the tree
-    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Vec::is_empty"))]
     pub children: Vec<Node<'input>>,
 
     /// A collection of all errors during parsing
-    #[cfg_attr(feature = "serde", serde(skip_serializing))]
     pub errors: Vec<String>,
 }
 
@@ -74,16 +68,6 @@ impl<'input> Dom<'input> {
         };
 
         Self::build_dom(pairs)
-    }
-
-    #[cfg(all(feature = "serde", feature = "serde_json"))]
-    pub fn to_json(&self) -> Result<String> {
-        Ok(serde_json::to_string(self)?)
-    }
-
-    #[cfg(all(feature = "serde", feature = "serde_json"))]
-    pub fn to_json_pretty(&self) -> Result<String> {
-        Ok(serde_json::to_string_pretty(self)?)
     }
 
     fn build_dom(pairs: Pairs<'input, Rule>) -> Result<Self> {
