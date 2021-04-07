@@ -215,7 +215,7 @@ impl Dom {
                 }
             }
         }
-        if element.name != "" {
+        if !element.name.is_empty() {
             Ok(Some(Node::Element(element)))
         } else {
             Ok(None)
