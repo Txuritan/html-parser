@@ -25,5 +25,6 @@ pub fn error_msg<'input>(error: PestError<Rule>) -> Result<super::Dom<'input>> {
         // TODO: Continue with this
         x => format!("{:?} ", x),
     });
+
     Err(Error::Parsing(message.to_string()))
 }

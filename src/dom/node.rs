@@ -61,7 +61,9 @@ impl<'a, 'input> Iterator for NodeIntoIterator<'a, 'input> {
 
                         if sibling.is_some() {
                             has_finished = true;
+
                             self.index.push((next_sibling, parent));
+
                             next_node = sibling;
                         } else {
                             continue;

@@ -115,9 +115,7 @@ impl<'input> Dom<'input> {
 
                         Ok(dom)
                     } else if dom.tree_type == DomVariant::Document && name != "html" {
-                        Err(Error::Parsing(
-                            "A document can only have html as root".to_string(),
-                        ))
+                        Err(Error::InvalidRoot)
                     } else {
                         dom.tree_type = DomVariant::DocumentFragment;
 
@@ -138,10 +136,7 @@ impl<'input> Dom<'input> {
                         let name = el.name.to_lowercase();
 
                         if name == "html" || name == "body" || name == "head" {
-                            return Err(Error::Parsing(format!(
-                                "A document fragment should not include {}",
-                                name
-                            )));
+                            return Err(Error::IllegalInclude(name));
                         }
                     }
                 }
@@ -219,15 +214,15 @@ impl<'input> Dom<'input> {
                 Rule::el_dangling => (),
                 Rule::EOI => (),
                 _ => {
-                    return Err(Error::Parsing(format!(
-                        "Failed to create element at rule: {:?}",
+                    return Err(Error::ElementCreation(Some(format!(
+                        "{:?}",
                         pair.as_rule()
-                    )))
+                    ))))
                 }
             }
         }
 
-        let element = element.ok_or_else(|| Error::Parsing("Failed to create element".to_string()))?;
+        let element = element.ok_or(Error::ElementCreation(None))?;
 
         if !element.name.is_empty() {
             Ok(Some(Node::Element(element)))
@@ -248,8 +243,8 @@ impl<'input> Dom<'input> {
                     attribute.1 = Some(pair.as_str());
                 }
                 _ => {
-                    return Err(Error::Parsing(format!(
-                        "Failed to create attribute at rule: {:?}",
+                    return Err(Error::AttributeCreation(format!(
+                        "{:?}",
                         pair.as_rule()
                     )))
                 }
