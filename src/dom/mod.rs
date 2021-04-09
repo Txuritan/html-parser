@@ -1,5 +1,5 @@
 use crate::Result;
-use pest::{iterators::Pairs, Parser};
+use pest::{iterators::Pairs, Parser, Span};
 
 use crate::error::Error;
 use crate::grammar::Grammar;
@@ -67,10 +67,10 @@ impl<'input> Dom<'input> {
             Err(error) => return formatting::error_msg(error),
         };
 
-        Self::build_dom(pairs)
+        Self::build_dom(input, pairs)
     }
 
-    fn build_dom(pairs: Pairs<'input, Rule>) -> Result<Self> {
+    fn build_dom(input: &'input str, pairs: Pairs<'input, Rule>) -> Result<Self> {
         let mut dom = Self::default();
 
         for pair in pairs {
@@ -78,16 +78,18 @@ impl<'input> Dom<'input> {
                 Rule::doctype => {
                     dom.tree_type = DomVariant::DocumentFragment;
                 }
-                Rule::node_element => match Self::build_node_element(pair.into_inner(), &mut dom) {
-                    Ok(el) => {
-                        if let Some(node) = el {
-                            dom.children.push(node);
+                Rule::node_element => {
+                    match Self::build_node_element(input, pair.into_inner(), &mut dom) {
+                        Ok(el) => {
+                            if let Some(node) = el {
+                                dom.children.push(node);
+                            }
+                        }
+                        Err(error) => {
+                            dom.errors.push(format!("{}", error));
                         }
                     }
-                    Err(error) => {
-                        dom.errors.push(format!("{}", error));
-                    }
-                },
+                }
                 Rule::node_text => {
                     dom.children.push(Node::Text(pair.as_str()));
                 }
@@ -147,18 +149,25 @@ impl<'input> Dom<'input> {
     }
 
     fn build_node_element(
+        input: &'input str,
         pairs: Pairs<'input, Rule>,
         dom: &mut Dom,
     ) -> Result<Option<Node<'input>>> {
-        let mut element = None;
+        let mut element = Element::default();
+
+        let mut start = None;
+        let mut end = None;
 
         for pair in pairs {
+            if start.is_none() {
+                start = Some(pair.as_span());
+            } else {
+                end = Some(pair.as_span());
+            }
+
             match pair.as_rule() {
                 Rule::node_element | Rule::el_raw_text => {
-                    let element =
-                        element.get_or_insert_with(|| Element::default_with_span(pair.as_span()));
-
-                    match Self::build_node_element(pair.into_inner(), dom) {
+                    match Self::build_node_element(input, pair.into_inner(), dom) {
                         Ok(el) => {
                             if let Some(child_element) = el {
                                 element.children.push(child_element)
@@ -170,52 +179,37 @@ impl<'input> Dom<'input> {
                     }
                 }
                 Rule::node_text | Rule::el_raw_text_content => {
-                    let element =
-                        element.get_or_insert_with(|| Element::default_with_span(pair.as_span()));
-
                     element.children.push(Node::Text(pair.as_str()));
                 }
                 // TODO: To enable some kind of validation we should probably align this with
                 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
                 // Also see element variants
                 Rule::el_name | Rule::el_void_name | Rule::el_raw_text_name => {
-                    let element =
-                        element.get_or_insert_with(|| Element::default_with_span(pair.as_span()));
-
                     element.name = pair.as_str();
                 }
-                Rule::attr => {
-                    let element =
-                        element.get_or_insert_with(|| Element::default_with_span(pair.as_span()));
+                Rule::attr => match Self::build_attribute(pair.into_inner()) {
+                    Ok((attr_key, attr_value)) => {
+                        match attr_key {
+                            "id" => element.id = attr_value,
+                            "class" => {
+                                if let Some(classes) = attr_value {
+                                    let classes = classes.split_whitespace().collect::<Vec<_>>();
 
-                    match Self::build_attribute(pair.into_inner()) {
-                        Ok((attr_key, attr_value)) => {
-                            match attr_key {
-                                "id" => element.id = attr_value,
-                                "class" => {
-                                    if let Some(classes) = attr_value {
-                                        let classes =
-                                            classes.split_whitespace().collect::<Vec<_>>();
-
-                                        for class in classes {
-                                            element.classes.push(class);
-                                        }
+                                    for class in classes {
+                                        element.classes.push(class);
                                     }
                                 }
-                                _ => {
-                                    element.attributes.insert(attr_key, attr_value);
-                                }
-                            };
-                        }
-                        Err(error) => {
-                            dom.errors.push(format!("{}", error));
-                        }
+                            }
+                            _ => {
+                                element.attributes.insert(attr_key, attr_value);
+                            }
+                        };
                     }
-                }
+                    Err(error) => {
+                        dom.errors.push(format!("{}", error));
+                    }
+                },
                 Rule::el_normal_end | Rule::el_raw_text_end => {
-                    let element =
-                        element.get_or_insert_with(|| Element::default_with_span(pair.as_span()));
-
                     element.variant = ElementVariant::Normal;
 
                     break;
@@ -231,7 +225,17 @@ impl<'input> Dom<'input> {
             }
         }
 
-        let element = element.ok_or(Error::ElementCreation(None))?;
+        match (start, end) {
+            (Some(start), Some(end)) => {
+                element.span = Span::new(
+                    input,
+                    start.start() - 1,
+                    end.end() + if !end.as_str().ends_with('>') { 1 } else { 0 },
+                )
+            }
+            (Some(start), None) => element.span = Some(start),
+            _ => {}
+        }
 
         if !element.name.is_empty() {
             Ok(Some(Node::Element(element)))

@@ -35,11 +35,11 @@ pub struct Element<'input> {
     /// All of the elements child nodes
     pub children: Vec<Node<'input>>,
 
-    pub span: Span<'input>,
+    pub span: Option<Span<'input>>,
 }
 
-impl<'input> Element<'input> {
-    pub fn default_with_span(span: Span<'input>) -> Self {
+impl<'input> Default for Element<'input> {
+    fn default() -> Self {
         Self {
             id: None,
             name: "",
@@ -47,7 +47,7 @@ impl<'input> Element<'input> {
             classes: vec![],
             attributes: HashMap::new(),
             children: vec![],
-            span,
+            span: None,
         }
     }
 }
