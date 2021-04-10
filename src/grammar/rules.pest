@@ -4,7 +4,8 @@
 html = _{
     SOI
     ~ node_comment*
-    ~ doctype?
+    ~ doctype_xml?
+    ~ doctype_html?
     ~ node*
     ~ EOI
 }
@@ -12,7 +13,8 @@ html = _{
 //
 // DOCTYPE
 //
-doctype = { chevron_left_bang ~ ^"doctype" ~ attr* ~ chevron_right_normal}
+doctype_html = { chevron_left_bang ~ ^"doctype" ~ attr* ~ chevron_right_normal}
+doctype_xml = { chevron_left_bang ~ ^"doctype" ~ ^"html"~ ^"PUBLIC" ~ attr_quoted* ~ chevron_right_normal}
 
 //
 // NODES

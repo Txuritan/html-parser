@@ -75,7 +75,7 @@ impl<'input> Dom<'input> {
 
         for pair in pairs {
             match pair.as_rule() {
-                Rule::doctype => {
+                Rule::doctype_html | Rule::doctype_xml => {
                     dom.tree_type = DomVariant::DocumentFragment;
                 }
                 Rule::node_element => {

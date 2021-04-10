@@ -8,7 +8,7 @@ use pest::error::Error as PestError;
 pub fn error_msg<'input>(error: PestError<Rule>) -> Result<super::Dom<'input>> {
     let message = error.renamed_rules(|rule| match *rule {
         Rule::EOI => "end of input".to_string(),
-        Rule::doctype => "doctype element".to_string(),
+        Rule::doctype_html | Rule::doctype_xml => "doctype element".to_string(),
         Rule::node_text => "text node".to_string(),
         Rule::node_element => "element node".to_string(),
         Rule::el_void => "void element".to_string(),
